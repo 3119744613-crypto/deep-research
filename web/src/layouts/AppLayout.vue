@@ -304,6 +304,13 @@ const mainList = computed(() => {
   })
 
   items.push({
+    name: '文档解析研发',
+    path: '/document-research',
+    icon: FileSearch,
+    activeIcon: FileSearch
+  })
+
+  items.push({
     name: '智能体',
     path: '/agent-manage',
     icon: Box,

@@ -1,0 +1,28 @@
+{
+  "real_public_http": true,
+  "explicit_proxy_for_this_check": true,
+  "sources": [
+    {
+      "title": "Docling 官方 README",
+      "url": "https://raw.githubusercontent.com/docling-project/docling/main/README.md",
+      "chars": 6000,
+      "sha256": "22a8c5334620ad7b656e692296afba8fb3ddcae2e92ef0f67bc06422261b75e5",
+      "fetched_at": "2026-10-08T12:11:00.126222+00:00"
+    },
+    {
+      "title": "PaddleOCR 官方 README",
+      "url": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/main/README.md",
+      "chars": 6000,
+      "sha256": "fb20b4b664f44b7785d513f24365c61b2e786da74af2d28405f14e5eb0295b9b",
+      "fetched_at": "2026-10-08T12:11:01.569289+00:00"
+    },
+    {
+      "title": "Unstructured 官方 README",
+      "url": "https://raw.githubusercontent.com/Unstructured-IO/unstructured/main/README.md",
+      "chars": 6000,
+      "sha256": "3266f7a604aa3288537cdae3bcf46d968dbd1d756cff05519a7f1c53d85a8811",
+      "fetched_at": "2026-10-08T12:11:03.052048+00:00"
+    }
+  ],
+  "warnings": []
+}

@@ -95,6 +95,10 @@ export default defineConfig(({ mode }) => {
         allow: [fileURLToPath(new URL('.', import.meta.url))]
       },
       proxy: {
+        '^/document-research-api(?:/|$)': {
+          target: 'http://127.0.0.1:4198',
+          changeOrigin: true
+        },
         '^/api': {
           target: env.VITE_API_URL || 'http://api:5050',
           changeOrigin: true

@@ -20,6 +20,7 @@ app.use(Antd)
 // 预加载信息配置
 import { useInfoStore } from '@/stores/info'
 const infoStore = useInfoStore()
-infoStore.loadInfoConfig()
+// 专用入口无需平台服务；直接加载时不读取平台配置或会话。
+if (!/^\/document-research\/?$/.test(window.location.pathname)) infoStore.loadInfoConfig()
 
 app.mount('#app')

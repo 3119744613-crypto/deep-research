@@ -1,0 +1,48 @@
+{
+  "synthetic": true,
+  "results": [
+    {
+      "name": "独立认证与空资料状态",
+      "status": "PASS"
+    },
+    {
+      "name": "真实HTTP上传与提取文本预览",
+      "status": "PASS"
+    },
+    {
+      "name": "最多三个澄清问题",
+      "status": "PASS"
+    },
+    {
+      "name": "真实Engine经合成HTTP模型生成引用/比较/实验/图谱报告",
+      "status": "PASS"
+    },
+    {
+      "name": "引用定位与证据原文展开",
+      "status": "PASS"
+    },
+    {
+      "name": "深色界面",
+      "status": "PASS"
+    },
+    {
+      "name": "页面刷新恢复当前任务",
+      "status": "PASS"
+    },
+    {
+      "name": "390px移动端无横向溢出",
+      "status": "PASS"
+    },
+    {
+      "name": "取消后晚到提供商响应不能生成报告",
+      "status": "PASS"
+    },
+    {
+      "name": "专用入口零原平台API请求/凭据泄漏/页面异常",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "sharedRequests": [],
+  "credentialLeaks": []
+}

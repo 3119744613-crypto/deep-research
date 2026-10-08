@@ -9,6 +9,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/document-research',
+      name: 'DocumentResearch',
+      component: () => import('../views/DocumentResearchView.vue'),
+      meta: { public: true, requiresAuth: false }
+    },
+    {
       path: '/',
       redirect: '/login'
     },
@@ -241,6 +247,8 @@ const router = createRouter({
 
 // 全局前置守卫
 router.beforeEach(async (to) => {
+  // 文档解析入口使用独立令牌；不读取或刷新平台会话。
+  if (to.name === 'DocumentResearch') return true
   // 检查路由是否需要认证
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth === true)
   const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)

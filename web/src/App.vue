@@ -4,13 +4,15 @@ import { useAgentStore } from '@/stores/agent'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 const agentStore = useAgentStore()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+const route = useRoute()
 
 onMounted(async () => {
-  if (userStore.isLoggedIn) {
+  if (!/^\/document-research\/?$/.test(window.location.pathname) && route.name !== 'DocumentResearch' && userStore.isLoggedIn) {
     await agentStore.initialize()
   }
 })

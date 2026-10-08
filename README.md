@@ -180,3 +180,9 @@ docker compose --env-file .env -f compose.yaml -f compose.local.yaml config --qu
 第三方代码来源与许可证见 `THIRD_PARTY_NOTICES.md`。旧的 `docker-compose.yml`、`apps/web` 以及根目录 `src/` 下的迁移前实现仅作为历史源码和比对材料，不进入当前 Compose 在线运行；当前可执行包统一位于 `backend/package/`。研究任务、需求 Query 与深研对话统一由 Vue、`/api/equipment`、PostgreSQL 和平台 Durable Task Worker 承载；旧数据只读迁移后继续展示。
 
 资源实测、启动模式、构建缓存与故障回退见 [运行与资源优化](docs/RUNTIME_OPERATIONS.md)。
+
+## 通用文档解析研发入口
+
+当前分支新增 `/document-research`：上传普通软件需求与失败样本，生成带来源的候选方案比较、建议实验步骤和拟定验收指标。原 Agent 系统和现有路由保留。新入口使用专用服务、数据和凭据，不接入原共享知识库、装备研发或作战推演流程，也不执行候选解析器性能实验。
+
+启动方式、智谱只读检索配置及限制见 [文档解析研发入口](docs/DOCUMENT_RESEARCH.md)；实际测试结果见 [验收记录](docs/DOCUMENT_RESEARCH_ACCEPTANCE.md)。

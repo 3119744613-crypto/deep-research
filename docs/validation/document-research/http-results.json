@@ -1,0 +1,50 @@
+{
+  "synthetic_provider": true,
+  "real_loopback_http": true,
+  "results": [
+    {
+      "name": "无专用凭据/错误凭据拒绝",
+      "status": "PASS"
+    },
+    {
+      "name": "两个独立身份不能跨库读取或选库",
+      "status": "PASS"
+    },
+    {
+      "name": "损坏PDF保留可见失败状态",
+      "status": "PASS"
+    },
+    {
+      "name": "未同意模型外发不能运行",
+      "status": "PASS"
+    },
+    {
+      "name": "实际Engine仅使用选定资料并标明未实测",
+      "status": "PASS"
+    },
+    {
+      "name": "空选择不回退到所有库，明确缺少证据",
+      "status": "PASS"
+    },
+    {
+      "name": "模型伪造来源ID拒绝保存",
+      "status": "PASS"
+    },
+    {
+      "name": "运行中编辑拒绝，取消立即返回真实终态",
+      "status": "PASS"
+    },
+    {
+      "name": "迟到响应不覆盖已取消状态",
+      "status": "PASS"
+    },
+    {
+      "name": "删除证据后旧报告与进行中结果不可读取",
+      "status": "PASS"
+    },
+    {
+      "name": "模型等待中撤销令牌使旧结果丢弃",
+      "status": "PASS"
+    }
+  ]
+}
