@@ -1,0 +1,352 @@
+{
+  "checked_at": "2026-10-09 Asia/Shanghai",
+  "scope": "Read-only official image manifests and same-version MinIO release archive; no business tasks executed.",
+  "runtime_images": [
+    {
+      "service": "milvus",
+      "image": "milvusdb/milvus:v2.5.6",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        }
+      ]
+    },
+    {
+      "service": "etcd",
+      "image": "quay.io/coreos/etcd:v3.5.5",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        }
+      ]
+    },
+    {
+      "service": "minio",
+      "image": "quay.io/minio/minio:RELEASE.2023-03-20T20-16-18Z",
+      "status": "inspect_failed",
+      "error": "no such manifest: quay.io/minio/minio:RELEASE.2023-03-20T20-16-18Z"
+    },
+    {
+      "service": "open-websearch",
+      "image": "ghcr.io/aas-ee/open-web-search@sha256:748f1d083c9930db8e8b5f017834e1efa9ec77844dbed01baef2acf3ad47e81a",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      ]
+    },
+    {
+      "service": "graph",
+      "image": "neo4j:5.26.29",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ]
+    },
+    {
+      "service": "postgres",
+      "image": "postgres:16",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v5"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "riscv64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ]
+    },
+    {
+      "service": "redis",
+      "image": "redis:7.4.10-alpine",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v6"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "riscv64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ]
+    },
+    {
+      "service": "review-init",
+      "image": "python:3.13-slim",
+      "status": "manifest_read",
+      "linux_arm64": true,
+      "platforms": [
+        {
+          "architecture": "amd64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v5"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm",
+          "os": "linux",
+          "variant": "v7"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "arm64",
+          "os": "linux",
+          "variant": "v8"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "386",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "ppc64le",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "riscv64",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        },
+        {
+          "architecture": "s390x",
+          "os": "linux"
+        },
+        {
+          "architecture": "unknown",
+          "os": "unknown"
+        }
+      ]
+    },
+    {
+      "service": "minio-official-dockerhub-same-tag",
+      "image": "minio/minio:RELEASE.2023-03-20T20-16-18Z",
+      "status": "inspect_failed",
+      "error": "errors:\ndenied: requested access to the resource is denied\nunauthorized: authentication required"
+    }
+  ],
+  "minio_official_archive": [
+    {
+      "name": "binary",
+      "method": "HEAD",
+      "requested_url": "https://dl.min.io/server/minio/release/linux-arm64/archive/minio.RELEASE.2023-03-20T20-16-18Z",
+      "final_url": "https://dl.min.io/server/minio/release/linux-arm64/archive/minio.RELEASE.2023-03-20T20-16-18Z",
+      "status": 410,
+      "content_length": "405",
+      "content_type": "text/plain; charset=utf-8"
+    },
+    {
+      "name": "sha256sum",
+      "method": "GET",
+      "requested_url": "https://dl.min.io/server/minio/release/linux-arm64/archive/minio.RELEASE.2023-03-20T20-16-18Z.sha256sum",
+      "final_url": "https://dl.min.io/server/minio/release/linux-arm64/archive/minio.RELEASE.2023-03-20T20-16-18Z.sha256sum",
+      "status": 410,
+      "content_length": "405",
+      "content_type": "text/plain; charset=utf-8"
+    }
+  ],
+  "outcome": {
+    "full_platform": "blocked",
+    "login": "not_run",
+    "workers": "not_started",
+    "buildkit_build": "interrupted_exit_130_after_dependency_block_confirmed"
+  }
+}

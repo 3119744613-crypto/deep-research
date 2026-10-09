@@ -1,6 +1,6 @@
 # 文档解析研发入口验收记录
 
-日期：2026-10-08。基线 HEAD：`93d29fb7299d06e691da07a3ae8f42d7a1125338`；本地分支：`feature/document-parsing-research`。
+初验日期：2026-10-08；2026-10-09 的续作结论在本页末尾。基线 HEAD：`93d29fb7299d06e691da07a3ae8f42d7a1125338`；本地分支：`feature/document-parsing-research`。
 
 2026-10-08 初验实现同仓库专用入口，保留原系统；没有修改或启动装备研发、武器研发或作战推演业务流程。原 `backend/` 源码最终无差异。没有迁移原数据库、覆盖交付包或推送 GitHub。
 
@@ -112,3 +112,17 @@ pnpm run build
 失败与处理保留：旧 venv 解释器路径失效，另建环境；首次 `make check` 因 uv 自动重选 Python、移除 test group 而失败，固定解释器并禁用重复同步后通过；容器入口格式首次失败后修正；相关后端配置测试初次被非必要 fixture 导入阻断，明确限定静态配置回归后通过；Colima 镜像直连超时，经本机显式代理重试成功；原平台 classic 构建发现缺 buildx 后中止，补齐插件继续验收，不将中止算通过。
 
 回滚本次部署接线时，先停止 `document-research` 容器，再用原 Compose 配置重建 Web，保留专用卷。代码可对本次 `fix: wire isolated document research container deployment` 提交执行 `git revert`。若同时撤销初版入口，还需回滚 `2ed651d9b661cf3b768cc556c6a489ed4ffd2c57`；不要强制 reset/clean 或删除用户数据。
+
+## 2026-10-09 交付收口
+
+**已发布**：用户公开 fork [3119744613-crypto/deep-research](https://github.com/3119744613-crypto/deep-research) 的 `main` 已实际快进到实现提交 `f5cbc76ce0c0a9aceec90c48149b3dd3a5a7d683`，GitHub API 核验一致，包含初版提交 `2ed651d9b661cf3b768cc556c6a489ed4ffd2c57`。未向 wangc219 的仓库推送。此节文档随后单独提交更新。
+
+**失败 / 阻断**：原平台固定的 `quay.io/minio/minio:RELEASE.2023-03-20T20-16-18Z` 在本次检查中无法匿名获取；官方 Docker Hub 同版本也返回鉴权拒绝。官方同版本 ARM64 二进制及 `.sha256sum` 归档均 HTTP 410，未取得可信的同版本替代制品。没有使用第三方镜像或擅自升级存储版本。其余 7 个运行镜像 manifest 已确认包含 Linux ARM64，这只证明架构清单可读，不是完整启动通过。
+
+为避免把不完整栈误交付为可用系统，确认该依赖阻断后中止原平台 BuildKit 构建（退出 130）。原实例 `compose ps` 为空，未启动原 API/worker、未创建管理员、未执行领域任务。全栈登录、持久存储协作、完整 readiness 仍 **NOT_RUN**。模型和智谱因用户暂无账号/密钥仍 **NOT_RUN**。证据：[依赖检查结果](validation/document-research/platform-dependency-results-20261009.json)。
+
+本次新建的 Colima VM 已停止以释放内存，保留安装工具、镜像缓存与验收配置；不是常驻部署。新增资料入口 28 项真实容器检查与前述单元/构建结果仍有效，不受原 MinIO 下载阻断影响。
+
+剩余工作是取得可用且经过核验的原平台 MinIO 制品后重新执行全栈验收，以及在提供真实模型和智谱专用配置后执行真实联调。没有执行的这些项目不能写成通过。
+
+回滚代码可先 `git revert f5cbc76ce0c0a9aceec90c48149b3dd3a5a7d683`，需要撤销全部新增入口时再 `git revert 2ed651d9b661cf3b768cc556c6a489ed4ffd2c57`；在自己的分支处理后推送自己的 fork，勿强推上游。停止专用容器并用原配置重建 Web，保留专用数据卷。最终说明文档是单独提交，可按需保留审计记录。

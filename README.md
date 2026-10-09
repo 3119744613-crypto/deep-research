@@ -1,5 +1,7 @@
 # 装备智能研究平台
 
+本 fork 基于 [wangc219/deep-research](https://github.com/wangc219/deep-research)，保留原完整系统源码，新增面向通用软件研发的文档解析研究入口。具体变化见 [上游差异说明](CHANGES_FROM_DEEP_RESEARCH.md)，实际通过、失败和未验证项见 [验收记录](docs/DOCUMENT_RESEARCH_ACCEPTANCE.md)。
+
 本仓库是「装备智能研究平台」的完整单体仓库。`platform_core` 提供共享平台内核，`equipment_deep_research` 封装装备研究领域能力，二者共享同一身份、项目、知识、模型、任务、审计和交付体系。
 
 平台将多智能体深度研究、装备需求 Query 生成、知识库、知识图谱、模型管理和企业权限整合在同一套 Web 工作台中。仓库同时保留当前产品源码、迁移工具、测试、设计文档、参考实现以及可公开的报告、截图和研究产物，便于在新设备上完整恢复开发与部署环境。
@@ -26,8 +28,10 @@
 
 ### 从 GitHub 完整恢复
 
+2026-10-09 验收状态：新增资料入口的可选 Docker 部署已实测通过；原完整栈受既有 MinIO 固定版本下载不可用阻断，登录与完整就绪尚未验证。以下保留原平台启动流程，暂不能据此认为本分支已通过全栈部署验收；详情及可独立运行的入口见 [使用说明](docs/DOCUMENT_RESEARCH.md)。
+
 ```bash
-git clone git@github.com:wangc219/deep-research.git
+git clone https://github.com/3119744613-crypto/deep-research.git
 cd deep-research
 bash scripts/platform.sh start
 ```

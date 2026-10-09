@@ -67,3 +67,11 @@
 本机24GiB内存、约238GiB可用盘。已安装Docker/Compose/Colima。首次Colima磁盘镜像直连超时，显式代理重试成功。COLIMA_HOME配置在此安装中未生效，实际使用本轮新建的默认VM目录；autoActivate=false、未改SSH配置、不设开机启动、仅挂载本次审查目录。Docker专项真实28项全过，专用镜像构建、init、Nginx、401/独立session/404和运行隔离均执行；只删除本次临时空卷和容器，结果文件已提交文档目录。
 
 另为原平台准备全新登录验收状态，worker禁用，不复用旧PG/Redis/输出。配置检查首次因macOS把/var/run解析为/private/var/run产生误报，严格校验原始Docker socket路径后通过。classic构建缺buildx而不能支持原RUN --mount，主动中止保留退出130，补装buildx后继续。此记录时原平台构建仍在进行，登录及完整ready未验证。真实模型/智谱继续NOT_RUN。
+
+## 2026-10-09 远端发布与原平台依赖阻断收口
+
+新增测试首次git add因稀疏检出范围拒绝，显式--sparse仅暂存该测试后通过。13文件的凭据模式/运行产物路径扫描及diff检查通过。提交f5cbc76ce0c0a9aceec90c48149b3dd3a5a7d683已非强制快进推送至用户fork main；GitHub API精确SHA核验一致。原仓库保留upstream，无push；backend相对基线仍无差异。
+
+原平台运行镜像首次manifest检查有网络失败，显式系统代理后7项确认ARM64。唯一阻断为原MinIO固定版本：Quay无法匿名获取、DockerHub同版鉴权拒绝，官方二进制与SHA归档均410。检查结果已保存。没有用不明镜像或升级版本。确认阻断后主动中止原BuildKit构建，退出130；compose ps无该实例服务，所有Docker运行容器也为空。原平台未启动、未初始化账号、未运行任何领域任务，登录及完整ready不能通过。
+
+已停止本次新建Colima VM（保留工具和缓存，不删除数据），旧交付包仍在。真实模型/智谱因无账号密钥未执行。README改为克隆用户fork，并注明当前全栈阻断及已实测的可选资料入口。失败/通过/未验证与回滚在验收文档分别记录。
