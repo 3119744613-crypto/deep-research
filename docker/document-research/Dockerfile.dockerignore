@@ -1,0 +1,8 @@
+**
+!document_research/
+!document_research/*.py
+!document_research/requirements.lock
+!docker/
+!docker/document-research/
+!docker/document-research/Dockerfile
+!docker/document-research/entrypoint.py

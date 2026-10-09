@@ -23,7 +23,7 @@
 2. 不导入 `platform_core`、`equipment_deep_research` 或 `knowledgegraph`，不注册共享工具、Agent preset 或 MCP。
 3. 不写入平台 PostgreSQL、Milvus、Neo4j、项目报告或原 AgentRun。
 4. 不修改默认 Compose 网络、数据挂载或 worker 配置。不要给原平台 worker/sandbox 挂载专用数据目录或传递专用令牌。
-5. 服务只绑定 `127.0.0.1`，前端专用 API 不发送原平台 cookie/token。
+5. 本机 CLI 只绑定 `127.0.0.1`；可选容器仅在专用容器网络监听，由 Web 的 loopback 端口代理。前端专用 API 不发送原平台 cookie/token。
 
 这属于进程、凭据和调用链隔离，不是同一操作系统用户之间的强安全沙箱。若部署到共享主机，需用独立系统用户/容器和访问控制保护数据；当前交付未声称通过生产多租户或网络隔离验收。
 
@@ -82,7 +82,64 @@ pnpm dev --host 127.0.0.1 --port 4196
 
 打开 `http://127.0.0.1:4196/document-research`，输入配置中 `tokens.local` 的专用令牌。它只保存在该入口独立的浏览器会话存储中。平台原登录令牌不能替代它。
 
-生产静态托管需要显式配置 `/document-research-api` 到专用服务的反向代理；Vite 的开发代理不是生产部署方案。本次未自动配置公网部署或修改平台默认 Compose。
+Vite 默认把专用 API 代理到 `http://127.0.0.1:4198`。如果开发服务器运行在另一个容器或受控主机，可通过仅供 Vite 使用的 `DOCUMENT_RESEARCH_PROXY_TARGET` 指定可达的专用服务地址；它不是浏览器中的模型地址。生产静态入口使用下面的可选覆盖层。
+
+## 可选 Docker 静态入口
+
+原平台默认 Compose 仍保持原有服务和挂载。显式添加 `docker/document-research/compose.yaml`，才会启用专用容器、网络、数据卷及 Nginx 代理。需要支持 `!override` 的 Docker Compose。先按根 README 准备原平台的 `.env`，其中不要放专用资料服务的令牌或提供商密钥。
+
+在仓库根目录定义本次操作的命令：
+
+```sh
+dr_compose() {
+  docker compose --env-file .env \
+    -f compose.yaml -f compose.local.yaml \
+    -f docker/document-research/compose.yaml "$@"
+}
+dr_compose build document-research web
+dr_compose run --rm --no-deps document-research init
+```
+
+初始化只对全新专用卷执行一次；再次执行会拒绝覆盖现有配置。随后启动专用服务和静态 Web：
+
+```sh
+dr_compose up -d --no-deps document-research web
+```
+
+这条命令不会启动原平台 API、worker 或数据库。若要查看原 Agent 系统，需要另外按原平台文档启动其服务；仅启动这两个容器不能称为完整平台就绪。覆盖层将 Web 默认端口绑定到 `127.0.0.1:5173`（可通过 `DEEP_RESEARCH_WEB_PORT` 调整）；专用资料容器没有宿主机端口。打开 `http://127.0.0.1:5173/document-research`。
+
+专用卷中的 `/var/lib/document-research/config.json` 不会输出到容器日志。需要读取令牌或配置模型时，将配置复制到本机私有目录，用本机编辑器打开；不要提交或发到聊天：
+
+```sh
+umask 077
+mkdir -p ../document-research-private
+chmod 700 ../document-research-private
+dr_compose cp document-research:/var/lib/document-research/config.json \
+  ../document-research-private/config.json
+chmod 600 ../document-research-private/config.json
+```
+
+保留原 `tokens` 映射，按前述配置格式填写模型和智谱字段。可用以下命令把本机编辑后的 JSON 原子写回专用卷，保持容器用户与文件权限，不重置数据库：
+
+```sh
+dr_compose exec -T document-research python -c '
+import json, os, pathlib, sys
+value = json.load(sys.stdin)
+assert isinstance(value, dict) and isinstance(value.get("tokens"), dict)
+os.umask(0o077)
+p = pathlib.Path("/var/lib/document-research/config.json")
+t = p.with_name("config.json.new")
+t.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+t.chmod(0o600)
+os.replace(t, p)
+' < ../document-research-private/config.json
+```
+
+服务按请求重新读取配置。容器里的 `127.0.0.1` 指容器自身；外部模型或显式代理地址必须能从专用容器访问。不会自动继承原平台的环境代理或模型配置。
+
+仅 Web 同时加入原平台网络和专用网络，原 API/worker 的挂载、环境和网络保持不变。专用代理清除 Cookie，不向浏览器转发 Set-Cookie，继续使用独立 Bearer 令牌。默认 Nginx 增加可选配置目录的空匹配 include；未启用覆盖层时不会要求资料服务存在。此配置没有开放公网访问。
+
+停止资料服务用 `dr_compose stop document-research`。撤销入口代理时，使用原 Compose 文件重建 Web；保留专用数据卷，避免使用 `down --volumes` 删除自己的资料。实际执行结果及未验证项见验收记录。
 
 ## 外发与来源
 

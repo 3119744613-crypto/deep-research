@@ -2,7 +2,7 @@
 
 日期：2026-10-08。基线 HEAD：`93d29fb7299d06e691da07a3ae8f42d7a1125338`；本地分支：`feature/document-parsing-research`。
 
-本轮实现同仓库专用入口，保留原系统；没有修改或启动装备研发、武器研发或作战推演业务流程。原 `backend/` 源码最终无差异。没有迁移原数据库、覆盖交付包或推送 GitHub。
+2026-10-08 初验实现同仓库专用入口，保留原系统；没有修改或启动装备研发、武器研发或作战推演业务流程。原 `backend/` 源码最终无差异。没有迁移原数据库、覆盖交付包或推送 GitHub。
 
 ## 已通过
 
@@ -71,7 +71,7 @@ HTTP 场景包括独立认证、两个身份的跨库拒绝、损坏 PDF 可见�
 ../document-research-venv/bin/ruff check document_research
 ../document-research-venv/bin/ruff format --check document_research
 uv sync --project backend --group test
-make check
+UV_NO_SYNC=1 make check
 ```
 
 前端：
@@ -93,3 +93,22 @@ pnpm run build
 若已合并该提交：用 `git revert <该提交SHA>` 生成逆向提交，再按原流程构建/重启前端。若仅试用此干净分支且未追加自己的改动：切回记录的上游基线分支 `main` 即可恢复原源码。不要执行强制 reset/clean。
 
 本轮没有原数据库迁移。专用数据目录位于仓库外，回滚代码不会删除资料或密钥；先独立备份，需要清理时再由使用者明确删除。GitHub 尚未推送，因此本轮没有需要撤回的远端发布。
+
+## 2026-10-09 部署接线复验
+
+本次起始提交为 `2ed651d9b661cf3b768cc556c6a489ed4ffd2c57`，工作树干净；上游 main 仍为本页记录的基线。用户确认暂无真实模型或智谱账号/密钥，并选择发布到自己的公开 fork `3119744613-crypto/deep-research`。旧补丁和 ZIP 保留。
+
+新增可选 Docker 覆盖层、专用容器入口及 Nginx 代理；Vite 支持显式专用服务目标。原 `api/worker` 的 Compose 定义经实际归并逐对象比较保持一致，原业务源码没有变更。
+
+已实际通过：
+
+- Python 3.12.8 新环境下专用模块 **112/112**，Ruff 和格式检查通过；新增 4 项容器初始化/鉴权测试。
+- 前端 lint、**511/511** 单元测试、生产构建通过，既有大 chunk 提示保留。
+- 固定 Python 版本并保留 test group 后，原 `make check` 的架构检查、编译、**13/13** 测试通过。相关既有 Nginx 静态配置测试单独 **3/3** 通过，不代表全后端单测通过。
+- Docker **28/28** 检查通过：实际构建两个镜像、初始化新专用卷、只启动资料容器和 Web、`nginx -t`、未配置模型的健康状态、无令牌/错误令牌 401、有效独立会话、未知 API 路径 JSON 404、运行态端口/挂载/网络隔离。Linux ARM64 Docker Engine 29.5.2、Compose 5.6.0。验收结束仅清理该临时项目和空卷，未留下假装正常运行的合成服务。
+
+证据：[Docker 专项结果](validation/document-research/docker-gateway-results-20261009.json)。所有真实模型与智谱调用仍 **NOT_RUN**。原完整平台的单独全新登录验收环境正在构建，当前未标记登录或完整 readiness 通过；原 worker 不在此验收启动范围。
+
+失败与处理保留：旧 venv 解释器路径失效，另建环境；首次 `make check` 因 uv 自动重选 Python、移除 test group 而失败，固定解释器并禁用重复同步后通过；容器入口格式首次失败后修正；相关后端配置测试初次被非必要 fixture 导入阻断，明确限定静态配置回归后通过；Colima 镜像直连超时，经本机显式代理重试成功；原平台 classic 构建发现缺 buildx 后中止，补齐插件继续验收，不将中止算通过。
+
+回滚本次部署接线时，先停止 `document-research` 容器，再用原 Compose 配置重建 Web，保留专用卷。代码可对本次 `fix: wire isolated document research container deployment` 提交执行 `git revert`。若同时撤销初版入口，还需回滚 `2ed651d9b661cf3b768cc556c6a489ed4ffd2c57`；不要强制 reset/clean 或删除用户数据。

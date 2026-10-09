@@ -1,6 +1,6 @@
 # 相对 deep-research 上游的本轮改动
 
-比较基线：[wangc219/deep-research，93d29fb7299d06e691da07a3ae8f42d7a1125338](https://github.com/wangc219/deep-research/tree/93d29fb7299d06e691da07a3ae8f42d7a1125338)，提交说明为 `Unify deep research platform identity and architecture`。本轮日期为 2026-10-08。
+比较基线：[wangc219/deep-research，93d29fb7299d06e691da07a3ae8f42d7a1125338](https://github.com/wangc219/deep-research/tree/93d29fb7299d06e691da07a3ae8f42d7a1125338)，提交说明为 `Unify deep research platform identity and architecture`。实现日期为 2026-10-08，2026-10-09 补充可选容器部署接线。
 
 本分支保留完整原系统源码、Agent、Vue 界面和现有路由。新增的是原界面可进入的“文档解析研发”能力，并使用独立服务落实通用软件任务的调用与数据边界。**原装备深研/技术攻关舱、共享知识库和共享知识图谱没有被本次改造。** 不应把这个分支描述成已经提升了那些领域流程。
 
@@ -15,7 +15,7 @@
 | 公开资料 | 固定获取 Docling、PaddleOCR、Unstructured 官方 README，按公共关键词在本地选择相关原文；不是全网搜索，不发送私有问题到公开站点。 |
 | 外部模型 | 专用 OpenAI 兼容 JSON 接口；运行前须同意发送问题与所选证据；未配置明确不可用，生产不默认合成提供商。 |
 | 任务可靠性 | 异步状态、取消、刷新恢复、权限重查、证据版本检查、事务条件更新；重启中断明确失败，不伪造恢复。 |
-| 部署 | 新增可选本机启动脚本与独立依赖锁；不改变原平台默认 Compose、网络、挂载或模型凭据。 |
+| 部署 | 新增本机启动脚本、独立依赖锁及可选 Docker 静态入口；显式覆盖层启用独立服务/卷/网络和 Nginx 代理，原 API/worker 配置不变。默认 Compose 不启用新服务。 |
 
 此入口是现有统一数据平面原则的一项明确架构例外，用于避免把新增检索与研究能力接入武器研发和作战推演链路。只更换示例文字或提示词不足以形成隔离，因此没有把智谱注册进现有 shared KB factory、工具注册表、Agent preset 或 MCP。
 

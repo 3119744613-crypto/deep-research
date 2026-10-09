@@ -96,7 +96,7 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '^/document-research-api(?:/|$)': {
-          target: 'http://127.0.0.1:4198',
+          target: env.DOCUMENT_RESEARCH_PROXY_TARGET || 'http://127.0.0.1:4198',
           changeOrigin: true
         },
         '^/api': {

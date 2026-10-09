@@ -1,0 +1,52 @@
+# 可选静态入口覆盖层；路径以第一个根 Compose 文件为准。
+# docker compose -f compose.yaml -f docker/document-research/compose.yaml build document-research web
+# docker compose -f compose.yaml -f docker/document-research/compose.yaml run --rm --no-deps document-research init
+# docker compose -f compose.yaml -f docker/document-research/compose.yaml up -d document-research web
+# 只验收独立模块时最后一条加 --no-deps，避免启动原平台业务服务。
+services:
+  document-research:
+    build:
+      context: .
+      dockerfile: docker/document-research/Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-deep-research}-document-research:local
+    user: "1000:1000"
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    volumes:
+      - document-research-data:/var/lib/document-research
+    networks:
+      - document-research-network
+    expose: ["4198"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4198/document-research-api/health', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      target: production
+    image: ${COMPOSE_PROJECT_NAME:-deep-research}-web-document-research:local
+    volumes: !override
+      - ./docker/document-research/nginx-location.conf:/etc/nginx/document-research.d/service.conf:ro
+    ports: !override
+      - "127.0.0.1:${DEEP_RESEARCH_WEB_PORT:-5173}:80"
+    networks:
+      - app-network
+      - document-research-network
+    environment:
+      NODE_ENV: production
+    command: ["nginx", "-g", "daemon off;"]
+
+volumes:
+  document-research-data:
+
+networks:
+  document-research-network:
+    driver: bridge

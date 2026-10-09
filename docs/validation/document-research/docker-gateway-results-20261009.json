@@ -1,0 +1,382 @@
+{
+  "started_at": "2026-10-09T11:03:08.097682+08:00",
+  "project": "dr-document-gateway-20261009-110308",
+  "port": 55173,
+  "scope": "Actual optional Compose overlay and Nginx, no model/provider configured; only document-research and web may run.",
+  "checks": [
+    {
+      "name": "default_compose_has_no_document_service",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "overlay_adds_only_document_service",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "all_existing_services_except_web_unchanged",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "api_mounts_environment_secrets_unchanged",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "worker_mounts_environment_secrets_unchanged",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "private_network_members_are_doc_and_web_only",
+      "status": "passed",
+      "detail": [
+        "document-research",
+        "web"
+      ]
+    },
+    {
+      "name": "document_container_has_no_published_ports",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "document_container_has_only_own_named_volume",
+      "status": "passed",
+      "detail": [
+        {
+          "type": "volume",
+          "source": "document-research-data",
+          "target": "/var/lib/document-research"
+        }
+      ]
+    },
+    {
+      "name": "document_container_has_no_platform_env_or_secrets",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "document_container_is_nonroot_readonly",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "web_publishes_only_loopback",
+      "status": "passed",
+      "detail": [
+        {
+          "mode": "ingress",
+          "host_ip": "127.0.0.1",
+          "target": 80,
+          "published": "55173",
+          "protocol": "tcp"
+        }
+      ]
+    },
+    {
+      "name": "web_mounts_only_optional_nginx_fragment_readonly",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "dedicated_project_did_not_preexist",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "nginx_health_json_no_model",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/health",
+        "status": 200,
+        "content_type": "application/json",
+        "json": {
+          "status": "ok",
+          "model_configured": false
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "only_doc_and_web_are_running",
+      "status": "passed",
+      "detail": [
+        "document-research",
+        "web"
+      ]
+    },
+    {
+      "name": "actual_doc_network_is_dedicated_only",
+      "status": "passed",
+      "detail": [
+        "dr-document-gateway-20261009-110308_document-research-network"
+      ]
+    },
+    {
+      "name": "actual_doc_has_no_host_port_binding",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "actual_doc_remains_nonroot_readonly",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "token_is_nonempty_private_memory_value",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "anonymous_session_is_json_401",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/session",
+        "status": 401,
+        "content_type": "application/json",
+        "json": {
+          "detail": "请提供此入口专用的访问令牌。"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "wrong_token_is_json_401",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/session",
+        "status": 401,
+        "content_type": "application/json",
+        "json": {
+          "detail": "请提供此入口专用的访问令牌。"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "private_token_session_reaches_service",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/session",
+        "status": 200,
+        "content_type": "application/json",
+        "json": {
+          "user": "local"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "unknown_api_path_is_not_spa:/document-research-api",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api",
+        "status": 404,
+        "content_type": "application/json",
+        "json": {
+          "detail": "Not Found"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "unknown_api_path_is_not_spa:/document-research-api/does-not-exist",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/does-not-exist",
+        "status": 404,
+        "content_type": "application/json",
+        "json": {
+          "detail": "Not Found"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "unknown_api_path_is_not_spa:/document-research-api/proxy?url=https%3A%2F%2Fexample.invalid",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/proxy?url=https%3A%2F%2Fexample.invalid",
+        "status": 404,
+        "content_type": "application/json",
+        "json": {
+          "detail": "Not Found"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "unknown_api_path_is_not_spa:/document-research-api/api/auth/me",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/api/auth/me",
+        "status": 404,
+        "content_type": "application/json",
+        "json": {
+          "detail": "Not Found"
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "fresh_private_library_is_empty",
+      "status": "passed",
+      "detail": {
+        "path": "/document-research-api/libraries",
+        "status": 200,
+        "content_type": "application/json",
+        "json": {
+          "items": []
+        },
+        "contains_html": false
+      }
+    },
+    {
+      "name": "no_domain_api_or_worker_started",
+      "status": "passed",
+      "detail": null
+    }
+  ],
+  "commands": [
+    {
+      "label": "compose-base",
+      "exit_code": 0,
+      "seconds": 0.178
+    },
+    {
+      "label": "compose-overlay",
+      "exit_code": 0,
+      "seconds": 0.065
+    },
+    {
+      "label": "docker-server",
+      "exit_code": 0,
+      "seconds": 0.03
+    },
+    {
+      "label": "project-absence",
+      "exit_code": 0,
+      "seconds": 0.015,
+      "log": "04-project-absence.log"
+    },
+    {
+      "label": "build-doc-and-web",
+      "exit_code": 0,
+      "seconds": 291.832,
+      "log": "05-build-doc-and-web.log"
+    },
+    {
+      "label": "init-dedicated-volume",
+      "exit_code": 0,
+      "seconds": 0.323,
+      "log": "06-init-dedicated-volume.log"
+    },
+    {
+      "label": "start-only-doc-and-web",
+      "exit_code": 0,
+      "seconds": 0.229,
+      "log": "07-start-only-doc-and-web.log"
+    },
+    {
+      "label": "nginx-config-test",
+      "exit_code": 0,
+      "seconds": 0.063,
+      "log": "08-nginx-config-test.log"
+    },
+    {
+      "label": "compose-runtime-status",
+      "exit_code": 0,
+      "seconds": 0.064,
+      "log": "09-compose-runtime-status.log"
+    },
+    {
+      "label": "container-ids",
+      "exit_code": 0,
+      "seconds": 0.062,
+      "log": "10-container-ids.log"
+    },
+    {
+      "label": "inspect-runtime-boundaries",
+      "exit_code": 0,
+      "seconds": 0.012
+    },
+    {
+      "label": "read-token-into-memory",
+      "exit_code": 0,
+      "seconds": 0.084
+    },
+    {
+      "label": "cleanup-owned-project",
+      "exit_code": 0,
+      "seconds": 0.398,
+      "log": "13-cleanup-owned-project.log"
+    }
+  ],
+  "source_sha256": {
+    "compose.yaml": "25e68e14e434294f53d4334fe680b9a34e9d3b15e6ade9c27f97bc104b5cb69a",
+    "docker/document-research/compose.yaml": "9329cee176938c640452673b6208ff3dcad9f4e5109d78c9c461ff4ac6040937",
+    "docker/document-research/Dockerfile": "0958dae2dd4df0f3430ece9d8445cebc6da00419d1a652fa714de07b3fda9851",
+    "docker/document-research/entrypoint.py": "c17c11820f1a086dbc5c7a4b5a73efb72c66a0e58cf0fb950ef8faa4f75a1f04",
+    "docker/document-research/nginx-location.conf": "3b7ae0a4fb73244acd0043db4f95f0913e71c397b4423fd4a56d5825fbc874c4",
+    "docker/nginx/default.conf": "c3156db2efcd002b8e9d548398bdc38a2788a582ece7dc98d42d7f4407748adf",
+    "docker/web.Dockerfile": "525abfbaf9dac901db4e48a3c82a83417804ac1a00fab904187b483e4f7b8ed0"
+  },
+  "docker_server": {
+    "Version": "29.5.2",
+    "Os": "linux",
+    "Arch": "arm64"
+  },
+  "runtime_boundaries": [
+    {
+      "service": "document-research",
+      "networks": [
+        "dr-document-gateway-20261009-110308_document-research-network"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "destination": "/var/lib/document-research",
+          "read_write": true
+        }
+      ],
+      "host_port_bindings": {},
+      "readonly_rootfs": true,
+      "user": "1000:1000"
+    },
+    {
+      "service": "web",
+      "networks": [
+        "dr-document-gateway-20261009-110308_app-network",
+        "dr-document-gateway-20261009-110308_document-research-network"
+      ],
+      "mounts": [
+        {
+          "type": "bind",
+          "destination": "/etc/nginx/document-research.d/service.conf",
+          "read_write": false
+        }
+      ],
+      "host_port_bindings": {
+        "80/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "55173"
+          }
+        ]
+      },
+      "readonly_rootfs": false,
+      "user": ""
+    }
+  ],
+  "cleanup": "passed",
+  "finished_at": "2026-10-09T11:08:01.860339+08:00",
+  "summary": {
+    "passed": 28,
+    "failed": 0,
+    "completed_runtime": true
+  },
+  "note": "2026-10-09 Docker-only acceptance with empty dedicated config; no real model or Zhipu API; temporary project and its synthetic data volume removed after verification."
+}

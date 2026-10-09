@@ -53,3 +53,17 @@
 - 真实 loopback HTTP 11/11、真实浏览器 10/10 全过，仍为合成模型联调；真实模型/智谱 NOT_RUN。最终截图已人工查看。
 - 合成模型已停止。本机正常专用服务健康、独立鉴权有效、用户资料库为空、模型未配置；Vite `/document-research` 可预览，不会伪造真实研究结果。
 - 专用运行依赖已解析为独立 requirements.lock，并在测试环境安装核对；没有修改上游锁文件。没有原数据库迁移或远程发布。
+
+## 2026-10-09 可选容器部署与交付复验
+
+起始 HEAD 2ed651d9b661cf3b768cc556c6a489ed4ffd2c57，工作树干净；上游 main API 复查未变化。用户确认暂无模型/智谱账号或密钥；授权创建 3119744613-crypto/deep-research 公开 fork。GitHub 首次设备授权直连超时，显式使用本机已有代理后成功；核验账号一致。fork 命令首次参数组合不受当前 CLI 支持，修正后创建成功，API 验证父仓库和公开性。未向 wangc219 原仓库推送。
+
+部署审查发现静态 Nginx 无专用 API 路由、容器内 Vite 的 loopback 不能访问宿主服务。新增可选专用容器/卷/网络/代理，保持默认部署及 api/worker 不变。容器非 root、根只读、无宿主端口；只有 Web 加入两个网络，入口默认 loopback。独立审查未发现阻断项。
+
+环境变化：旧 venv 的 Python 路径不能使用，未覆盖它们；另建 Python3.12.8 环境。首次容器测试与后端静态测试合跑出现7pass/3error，后端 autouse fixture 缺共享依赖；读过用例后单独限定静态配置目录，3/3通过；不将此当成全后端通过。入口格式首次1文件失败后修正。专用模块最终112/112、Ruff/格式均通过；前端lint/511项/build通过。
+
+原make check首次自动重选Python3.13且同步移除test group，pytest回退系统路径缺pytest_asyncio，退出2。明确固定Python3.12并同步test组，以UV_NO_SYNC=1复验架构/编译/13项测试通过；未改原依赖锁或业务文件。
+
+本机24GiB内存、约238GiB可用盘。已安装Docker/Compose/Colima。首次Colima磁盘镜像直连超时，显式代理重试成功。COLIMA_HOME配置在此安装中未生效，实际使用本轮新建的默认VM目录；autoActivate=false、未改SSH配置、不设开机启动、仅挂载本次审查目录。Docker专项真实28项全过，专用镜像构建、init、Nginx、401/独立session/404和运行隔离均执行；只删除本次临时空卷和容器，结果文件已提交文档目录。
+
+另为原平台准备全新登录验收状态，worker禁用，不复用旧PG/Redis/输出。配置检查首次因macOS把/var/run解析为/private/var/run产生误报，严格校验原始Docker socket路径后通过。classic构建缺buildx而不能支持原RUN --mount，主动中止保留退出130，补装buildx后继续。此记录时原平台构建仍在进行，登录及完整ready未验证。真实模型/智谱继续NOT_RUN。
