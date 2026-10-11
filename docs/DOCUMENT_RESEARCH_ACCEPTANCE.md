@@ -215,3 +215,16 @@ git apply --reverse ../retrieval-upgrade-20261011T094406Z/retrieval-upgrade.patc
 专项证据：[结果 JSON](validation/document-research/publication-20261011/results.json)、[问答恢复截图](validation/document-research/publication-20261011/answer-response-loss-recovered.png)、[深研恢复截图](validation/document-research/publication-20261011/research-response-loss-recovered.png)。合成测试服务已停止，用户当前本机 4196/4198 服务保留。
 
 GitHub 云端检查与实际推送结果将在发布确认后单独追加，不将本机通过记成云端通过。前文“尚未提交/推送”是对应阶段的历史状态。
+
+
+## 2026-10-11 发布已确认
+
+已将完整功能与发布前修复提交 [`2116cd4`](https://github.com/3119744613-crypto/deep-research/commit/2116cd4782fb88e935dc5af8d2776444c06be50b)，并通过普通快进推送更新用户公开 fork 的 `main`（843a7c4 → 2116cd4）。GitHub API 返回的远端 main 精确 SHA 与本地实现提交一致。未修改 wangc219 上游，未强推。此前“尚未发布”记录保留为历史过程。
+
+本机最终验证：后端 263、旧架构/设置 13、前端 520 全部通过；lint、构建通过。沿用本轮此前的 15 项综合浏览器验收，并新增 3 项发布专项回归通过。专项仅使用合成 HTTP；真实提供商验收见前文，不声称专业报告质量、完整平台部署或生产稳定性通过。
+
+GitHub Actions 与本机结果分开：发布后首次查询未返回本提交的运行记录，尚未取得云端检查结论，不计为通过。本说明另以文档提交保存，不改变已验证代码。
+
+### 已发布版本的回滚
+
+先保存自己的后续修改并停止受影响的本机服务，在自己的分支执行 `git revert 2116cd4782fb88e935dc5af8d2776444c06be50b` 可生成反向提交，审核后正常推送自己的 fork；不要强推或重置历史。没有实际执行回滚。该实现提交同时包含上轮模型兼容修复与本轮检索增强，撤销它会一起撤销这批未发布前的改动；专用数据与密钥配置不受 Git revert 管理，不应删除。仓库外保留发布前内容副本以供选择性恢复。
