@@ -202,7 +202,7 @@ def test_readonly_zhipu_grants_are_operator_configured(setup):
             "id": "zhipu:docs-one",
             "name": "只读解析文档",
             "kind": "zhipu",
-            "document_count": 0,
+            "document_count": None,
         }
     ]
     assert client.delete(PREFIX + "/libraries/zhipu:docs-one").status_code == 400

@@ -9,12 +9,12 @@ import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .config import load_config, validate_data_dir
 from .contracts import ResearchError
@@ -45,15 +45,12 @@ class LibraryInput(Input):
         return value.strip()
 
 
-class TaskInput(Input):
+class RetrievalInput(Input):
     problem: str = Field(min_length=1, max_length=20_000)
     library_ids: list[str] = Field(default_factory=list, max_length=20)
-    parser_version: str = Field(default="", max_length=2000)
-    expected_result: str = Field(default="", max_length=10_000)
-    constraints: str = Field(default="", max_length=10_000)
     allow_public: bool = False
     public_query: str = Field(default="", max_length=500)
-    allow_external_model: bool = False
+    allow_web_search: bool = False
 
     @field_validator("problem")
     @classmethod
@@ -70,6 +67,20 @@ class TaskInput(Input):
         ):
             raise ValueError("资料库选择无效或重复。")
         return values
+
+    @model_validator(mode="after")
+    def public_query_required(self):
+        if self.allow_web_search and not 1 <= len(self.public_query.strip()) <= 70:
+            raise ValueError("联网搜索须单独填写 1–70 字符的公开关键词。")
+        return self
+
+
+class TaskInput(RetrievalInput):
+    mode: Literal["research", "answer"] = "research"
+    parser_version: str = Field(default="", max_length=2000)
+    expected_result: str = Field(default="", max_length=10_000)
+    constraints: str = Field(default="", max_length=10_000)
+    allow_external_model: bool = False
 
 
 class TaskPatch(Input):
@@ -120,6 +131,7 @@ def create_app(data_dir: str | Path, engine=None) -> FastAPI:
         engine = Engine(lambda: load_config(directory))
     jobs: dict[str, asyncio.Task] = {}
     parser_slots = asyncio.Semaphore(2)
+    retrieval_slots = asyncio.Semaphore(4)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -214,7 +226,7 @@ def create_app(data_dir: str | Path, engine=None) -> FastAPI:
                 "id": "zhipu:" + item["id"],
                 "name": item.get("name", item["id"]),
                 "kind": "zhipu",
-                "document_count": 0,
+                "document_count": None,
             }
             for item in libraries
             if isinstance(item, dict)
@@ -270,6 +282,9 @@ def create_app(data_dir: str | Path, engine=None) -> FastAPI:
         }
 
     def refresh_questions(task: dict):
+        if task.get("mode") == "answer":
+            task.update(questions=[], assumptions=[], status="ready")
+            return
         missing = [field for field in QUESTIONS if not task.get(field, "").strip()]
         task["questions"] = [
             {"field": field, "question": QUESTIONS[field]} for field in missing
@@ -369,6 +384,73 @@ def create_app(data_dir: str | Path, engine=None) -> FastAPI:
         get_document(identity, document_id)
         store.delete_document(document_id)
         return {"deleted": True}
+
+    def collect_sources(identity: Identity, task: dict):
+        revisions = {}
+        sources = []
+        for library_id in task["library_ids"]:
+            library = authorize_library(identity, library_id)
+            if library_id.startswith("local:"):
+                revisions[library_id] = library["revision"]
+                for item in store.documents(library_id):
+                    if item["status"] != "ready":
+                        continue
+                    for chunk in item["chunks"]:
+                        sources.append(
+                            {
+                                "id": item["id"] + ":" + chunk["id"],
+                                "library_id": library_id,
+                                "document_id": item["id"],
+                                "title": item["name"],
+                                "text": chunk["text"],
+                                "page": chunk["page"],
+                                "source_url": None,
+                                "origin": "local",
+                            }
+                        )
+                        if len(sources) > 2000:
+                            raise HTTPException(
+                                413,
+                                "所选资料超过单次研究范围，请减少所选资料库或拆分文档。",
+                            )
+        return sources, revisions
+
+    @app.post(PREFIX + "/retrieve")
+    async def retrieve(body: RetrievalInput, identity: Auth, request: Request):
+        task = body.model_dump() | {"owner": identity.owner}
+        sources, revisions = collect_sources(identity, task)
+        task["library_revisions"] = revisions
+
+        def authorize():
+            authorize_task(identity, task)
+
+        if retrieval_slots.locked():
+            raise HTTPException(429, "同时最多检索 4 个请求，请稍后重试。")
+        async with retrieval_slots:
+            job = asyncio.create_task(engine.retrieve(task, sources, authorize))
+            try:
+                async with asyncio.timeout(145):
+                    while not job.done():
+                        await asyncio.wait({job}, timeout=0.2)
+                        if await request.is_disconnected():
+                            raise HTTPException(499, "检索请求已断开。")
+                    result = await job
+                    authorize()
+                    return result
+            except TimeoutError:
+                raise HTTPException(504, "检索超时，请缩小范围或稍后重试。") from None
+            except (ResearchError, ProviderError) as exc:
+                raise HTTPException(502, str(exc)) from None
+            except (PermissionError, HTTPException):
+                raise
+            except Exception:  # noqa: BLE001 -- Never expose private provider request/response text.
+                raise HTTPException(
+                    502, "检索失败，请检查独立检索配置后重试。"
+                ) from None
+            finally:
+                if not job.done():
+                    job.cancel()
+                await asyncio.gather(job, return_exceptions=True)
 
     @app.post(PREFIX + "/tasks", status_code=201)
     def create_task(body: TaskInput, identity: Auth):
@@ -477,33 +559,7 @@ def create_app(data_dir: str | Path, engine=None) -> FastAPI:
                 503,
                 "尚未配置可用模型。请在独立 config.json 中设置 model.base_url、api_key 和 model。",
             )
-        revisions = {}
-        sources = []
-        for library_id in task["library_ids"]:
-            library = authorize_library(identity, library_id)
-            if library_id.startswith("local:"):
-                revisions[library_id] = library["revision"]
-                for item in store.documents(library_id):
-                    if item["status"] != "ready":
-                        continue
-                    for chunk in item["chunks"]:
-                        sources.append(
-                            {
-                                "id": item["id"] + ":" + chunk["id"],
-                                "library_id": library_id,
-                                "document_id": item["id"],
-                                "title": item["name"],
-                                "text": chunk["text"],
-                                "page": chunk["page"],
-                                "source_url": None,
-                                "origin": "local",
-                            }
-                        )
-                        if len(sources) > 2000:
-                            raise HTTPException(
-                                413,
-                                "所选资料超过单次研究范围，请减少所选资料库或拆分文档。",
-                            )
+        sources, revisions = collect_sources(identity, task)
         task.update(
             status="running", report=None, error=None, library_revisions=revisions
         )

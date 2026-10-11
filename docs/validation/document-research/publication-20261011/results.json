@@ -1,0 +1,67 @@
+{
+  "synthetic": true,
+  "real_external_providers": false,
+  "production_service_engine": true,
+  "scenarios": [
+    {
+      "name": "问答自动启动在真实202响应被丢弃后只读轮询至完成，无刷新、无重复POST或模型调用",
+      "status": "PASS"
+    },
+    {
+      "name": "深研手动启动在真实202响应被丢弃后只读轮询至完成，无刷新、无重复POST或模型调用",
+      "status": "PASS"
+    },
+    {
+      "name": "新建隔离浏览器上下文、无原平台API、无浏览器异常、仅loopback合成提供商",
+      "status": "PASS"
+    }
+  ],
+  "run_posts": [
+    {
+      "path": "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a/run",
+      "status": 202,
+      "task_id": "6c5a1bd795064a76a2f1100361deda0a",
+      "server_state_before_drop": "running"
+    },
+    {
+      "path": "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf/run",
+      "status": 202,
+      "task_id": "632c5607d64245cf97785ceb5c1562cf",
+      "server_state_before_drop": "running"
+    }
+  ],
+  "reads": [
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/6c5a1bd795064a76a2f1100361deda0a",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf",
+    "/document-research-api/tasks/632c5607d64245cf97785ceb5c1562cf"
+  ],
+  "page_errors": [],
+  "shared_requests": [],
+  "navigation_count": 1,
+  "passed": 3,
+  "failed": 0,
+  "provider_state": {
+    "model_calls": 2,
+    "retrieve_calls": 2,
+    "search_calls": 0,
+    "public_queries": [],
+    "blocked_network_requests": []
+  },
+  "test_services_stopped": true,
+  "ports_no_listeners_verified": [
+    4206,
+    4208,
+    4209
+  ]
+}

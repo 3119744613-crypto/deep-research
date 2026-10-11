@@ -12,7 +12,7 @@ export class DocumentResearchError extends Error {
 
 // 本入口只携带专用 token；不导入平台 client，不附带浏览器 cookie。
 export function createDocumentResearchApi(getToken, fetcher = globalThis.fetch) {
-  async function request(path, { method = 'GET', body, signal, publicRequest = false } = {}) {
+  async function request(path, { method = 'GET', body, signal, publicRequest = false, timeout = 60000 } = {}) {
     const token = getToken()?.trim()
     if (!publicRequest && !token) throw new DocumentResearchError('请输入文档研发服务的专用访问令牌。', 401)
     const headers = { Accept: 'application/json' }
@@ -20,14 +20,16 @@ export function createDocumentResearchApi(getToken, fetcher = globalThis.fetch) 
     const isForm = body instanceof FormData
     if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
     let response
+    const timeoutSignal = AbortSignal.timeout(timeout)
     try {
       response = await fetcher(`${PREFIX}${path}`, {
         method, headers, credentials: 'omit', redirect: 'error',
         body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
-        signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60000)]) : AbortSignal.timeout(60000)
+        signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal
       })
     } catch (error) {
       if (signal?.aborted) throw error
+      if (timeoutSignal.aborted) throw new DocumentResearchError('等待服务响应超时。远端请求可能仍在执行，请稍后再试。')
       throw new DocumentResearchError('无法连接文档研发服务，请确认本机 4198 端口已启动，再重试。')
     }
     let data
@@ -55,6 +57,7 @@ export function createDocumentResearchApi(getToken, fetcher = globalThis.fetch) 
     },
     document: (documentId) => request(`/documents/${id(documentId)}`),
     deleteDocument: (documentId) => request(`/documents/${id(documentId)}`, { method: 'DELETE' }),
+    retrieve: (body, signal) => request('/retrieve', { method: 'POST', body, signal, timeout: 150000 }),
     createTask: (body) => request('/tasks', { method: 'POST', body }),
     task: (taskId, signal) => request(`/tasks/${id(taskId)}`, { signal }),
     updateTask: (taskId, body) => request(`/tasks/${id(taskId)}`, { method: 'PATCH', body }),
@@ -98,6 +101,55 @@ export function createDocumentTaskMonitor({ readTask, onTask, onError, delay = 1
       }
     }
     void poll()
+  }
+  return { start, stop }
+}
+
+// 启动请求只发一次。响应丢失时读取已知任务的状态，不能自动重发可能产生费用的请求。
+export async function runDocumentTaskOnce({ taskId, runTask, isCurrent, onTask, onPending, onError, onUnknown, monitor }) {
+  if (!isCurrent()) return
+  onPending(true)
+  try {
+    const task = await runTask(taskId)
+    if (!isCurrent()) return
+    onPending(false)
+    onTask(task)
+    if (task.status === 'running') monitor.start(taskId)
+  } catch (error) {
+    if (!isCurrent()) return
+    if ([401, 403, 404].includes(error.status)) {
+      onPending(false)
+      monitor.stop()
+      onError(error)
+    } else {
+      onUnknown(error)
+      monitor.start(taskId)
+    }
+  }
+}
+
+// 预览不生成任务；停止等待或修改资料范围后，任何旧响应都不能重新出现。
+export function createDocumentRetrievalPreview({ retrieve, onResult, onError, onLoading }) {
+  let generation = 0
+  let controller
+  function stop() {
+    generation += 1
+    controller?.abort()
+    onLoading(false)
+  }
+  async function start(payload) {
+    stop()
+    const current = generation
+    controller = new AbortController()
+    onLoading(true)
+    try {
+      const result = await retrieve(payload, controller.signal)
+      if (current === generation) onResult(result)
+    } catch (error) {
+      if (current === generation) onError(error)
+    } finally {
+      if (current === generation) onLoading(false)
+    }
   }
   return { start, stop }
 }

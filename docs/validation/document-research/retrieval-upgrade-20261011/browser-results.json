@@ -1,0 +1,81 @@
+{
+  "browser": "Chrome via Playwright, fresh context",
+  "production_service_engine_and_provider_parser": true,
+  "provider_network": "actual loopback HTTP synthetic services only",
+  "real_external_providers": false,
+  "final_scenarios": [
+    {
+      "name": "未同意外部模型时可通过真实HTTP检索预览，模型调用数不增加",
+      "status": "PASS"
+    },
+    {
+      "name": "关键词无命中显示空结果，不误报资料库无文档",
+      "status": "PASS"
+    },
+    {
+      "name": "合成提供商HTTP503显示失败，与成功零命中区分",
+      "status": "PASS"
+    },
+    {
+      "name": "切换资料范围清空预览，已返回但延迟送达的旧结果不会恢复",
+      "status": "PASS"
+    },
+    {
+      "name": "合成公开搜索只收到显式关键词，未收到私人问题或文档",
+      "status": "PASS"
+    },
+    {
+      "name": "真实Engine经合成HTTP生成有据回答，并过滤无依据图谱边且告知",
+      "status": "PASS"
+    },
+    {
+      "name": "点击引用自动展开并定位来源原文",
+      "status": "PASS"
+    },
+    {
+      "name": "真实浏览器深色模式截图",
+      "status": "PASS"
+    },
+    {
+      "name": "390px浅色/深色界面无文档横向溢出",
+      "status": "PASS"
+    },
+    {
+      "name": "刷新页面后恢复已有问答任务和证据",
+      "status": "PASS"
+    },
+    {
+      "name": "深研方案继续产生带引用的实验步骤与未实测标记",
+      "status": "PASS"
+    },
+    {
+      "name": "取消后晚到合成模型响应不能生成报告",
+      "status": "PASS"
+    },
+    {
+      "name": "未调用原平台API、未混用平台凭据、无浏览器脚本异常",
+      "status": "PASS"
+    },
+    {
+      "name": "检索加载状态真实展示，停止等待后旧结果不恢复且不声称远端已取消",
+      "status": "PASS"
+    },
+    {
+      "name": "问答无命中时明确证据缺口，无伪造回答且不调用模型",
+      "status": "PASS"
+    }
+  ],
+  "passed": 15,
+  "failed": 0,
+  "previous_successful_attempts_preserved": [
+    "browser_2026-10-11T11-42-14-215Z",
+    "browser_2026-10-11T11-43-03-706Z"
+  ],
+  "rerun_reason": "Reload final backend code and final UI graph validation label.",
+  "test_services_stopped": true,
+  "ports_no_listeners_verified": [
+    4206,
+    4208,
+    4209
+  ]
+}

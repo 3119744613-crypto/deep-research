@@ -1,22 +1,34 @@
 <script setup>
-import { safeSourceUrl } from '@/apis/document_research_api'
-defineProps({ report: { type: Object, required: true } })
-const originLabel = { local: '本地资料', zhipu: '智谱知识库', public: '公开来源' }
+import { computed, ref } from 'vue'
+import EvidenceSources from './EvidenceSources.vue'
+import RetrievalStatus from './RetrievalStatus.vue'
+import { citedSourceIds } from './evidencePresentation'
+const props = defineProps({ report: { type: Object, required: true } })
+const sources = ref(null)
+const isAnswer = computed(() => props.report.mode === 'answer')
+const citedIds = computed(() => citedSourceIds(props.report))
+function openSource(id) { sources.value?.openSource(id) }
 </script>
 
 <template>
-  <article class="report" aria-label="文档解析研究报告">
-    <div class="report-heading"><h2>研究方案</h2><span class="badge">未实测 · 待验证</span></div>
-    <p>以下为建议方案、实验步骤与拟定验收指标，未运行候选解析器实验。</p>
-    <p class="summary">{{ report.summary }}</p>
+  <article class="report" :aria-label="isAnswer ? '证据问答' : '文档解析研究报告'">
+    <div class="report-heading"><h2>{{ isAnswer ? '有据回答' : '研究方案' }}</h2><span class="badge">未实测 · 待验证</span></div>
+    <p v-if="!isAnswer">以下为建议方案、实验步骤与拟定验收指标，未运行候选解析器实验。</p>
+    <p v-if="!isAnswer" class="summary">{{ report.summary }}</p>
     <section v-if="report.warnings?.length" class="notice"><h3>本次限制</h3><ul><li v-for="(item, i) in report.warnings" :key="i">{{ item }}</li></ul></section>
 
+    <RetrievalStatus :items="report.retrieval_status || []" />
+    <section v-if="isAnswer" aria-label="回答与原文">
+      <p v-if="!report.answer?.length">当前证据不足，暂时无法给出有依据的回答。请查看下方证据缺口。</p>
+      <div v-for="(item, i) in report.answer" :key="i" class="comparison"><p>{{ item.text }}</p><blockquote>{{ item.quote }}</blockquote><a :href="`#document-source-${encodeURIComponent(item.source_id)}`" @click.prevent="openSource(item.source_id)">[{{ item.source_id }}] 查看来源原文</a></div>
+    </section>
+    <template v-if="!isAnswer">
     <section><h3>方案比较</h3>
       <p v-if="!report.comparisons?.length">证据不足，暂未形成可比较方案。</p>
       <div v-for="(candidate, i) in report.comparisons" :key="i" class="comparison">
         <h4>{{ candidate.name }}</h4><p>{{ candidate.approach }}</p>
         <div class="pros-cons"><div><strong>优点</strong><ul><li v-for="(item, n) in candidate.pros" :key="n">{{ item }}</li></ul></div><div><strong>局限</strong><ul><li v-for="(item, n) in candidate.cons" :key="n">{{ item }}</li></ul></div></div>
-        <div class="citations">依据：<a v-for="id in candidate.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`">[{{ id }}]</a><span v-if="!candidate.source_ids?.length">无引用，待验证</span></div>
+        <div class="citations">依据：<a v-for="id in candidate.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`" @click.prevent="openSource(id)">[{{ id }}]</a><span v-if="!candidate.source_ids?.length">无引用，待验证</span></div>
       </div>
     </section>
 
@@ -25,33 +37,29 @@ const originLabel = { local: '本地资料', zhipu: '智谱知识库', public: '
         <h4>{{ i + 1 }}. {{ experiment.name }}</h4><ol><li v-for="(step, n) in experiment.steps" :key="n">{{ step }}</li></ol>
         <strong>拟定指标</strong><ul><li v-for="(metric, n) in experiment.metrics" :key="n">{{ metric }}</li></ul>
         <p><strong>验收条件：</strong>{{ experiment.acceptance }}</p>
-        <div class="citations">依据：<a v-for="id in experiment.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`">[{{ id }}]</a><span v-if="!experiment.source_ids?.length">建议实验，待验证</span></div>
+        <div class="citations">依据：<a v-for="id in experiment.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`" @click.prevent="openSource(id)">[{{ id }}]</a><span v-if="!experiment.source_ids?.length">建议实验，待验证</span></div>
       </div>
     </section>
 
     <section class="recommendation"><h3>推荐理由</h3><p>{{ report.recommendation?.text || '证据不足，暂无确定推荐。' }}</p>
-      <div class="citations"><a v-for="id in report.recommendation?.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`">[{{ id }}]</a></div>
+      <div class="citations"><a v-for="id in report.recommendation?.source_ids" :key="id" :href="`#document-source-${encodeURIComponent(id)}`" @click.prevent="openSource(id)">[{{ id }}]</a></div>
     </section>
+    </template>
     <section v-if="report.assumptions?.length"><h3>假设</h3><ul><li v-for="(item, i) in report.assumptions" :key="i">{{ item }}</li></ul></section>
     <section v-if="report.gaps?.length"><h3>证据缺口与待验证项</h3><ul><li v-for="(item, i) in report.gaps" :key="i">{{ item }}</li></ul></section>
 
-    <section><h3>证据关系</h3><p>原文陈述只表示存在对应引文，不代表关系已获独立核实。</p>
-      <p v-if="!report.graph?.length">本次未形成可展示的证据关系。</p>
+    <section><h3>证据关系</h3><p>新生成的关系会核对主体、客体是否出现在所引原文中。该校验不等于关系语义已获独立核实；推断仍需验证。</p>
+      <p v-if="!report.graph?.length">本次没有可展示的证据关系，可能是证据不足或未通过原文与端点校验；补充原始资料后可重新提问。</p>
       <div v-for="(edge, i) in report.graph" :key="i" class="relation">
-        <span class="badge">{{ edge.kind === 'fact' ? '原文陈述 · 未独立核实' : '待验证线索' }}</span>
+        <span class="badge">{{ edge.kind === 'fact' ? '原文陈述 · 未独立核实' : '推断 · 待验证' }}</span><span class="badge">{{ edge.grounding_status === 'endpoints_in_quote' ? '原文端点已校验' : '历史结果 · 端点未校验' }}</span>
         <p><strong>{{ edge.subject }}</strong> → {{ edge.relation }} → <strong>{{ edge.object }}</strong></p>
         <blockquote v-if="edge.quote">{{ edge.quote }}</blockquote>
-        <a v-if="edge.source_id" :href="`#document-source-${encodeURIComponent(edge.source_id)}`">[{{ edge.source_id }}]</a>
+        <a v-if="edge.source_id" :href="`#document-source-${encodeURIComponent(edge.source_id)}`" @click.prevent="openSource(edge.source_id)">[{{ edge.source_id }}]</a>
       </div>
     </section>
 
-    <section><h3>实际使用的来源</h3><p v-if="!report.sources?.length">没有可用来源。</p>
-      <details v-for="source in report.sources" :id="`document-source-${encodeURIComponent(source.id)}`" :key="source.id" class="source">
-        <summary>[{{ source.id }}] {{ source.title }} <span class="badge">{{ originLabel[source.origin] || '来源类型未知' }}</span><span v-if="source.page !== null && source.page !== undefined"> · 第 {{ source.page }} 页</span></summary>
-        <p v-if="source.page === null || source.page === undefined" class="muted">来源未提供页码。</p>
-        <a v-if="safeSourceUrl(source.source_url)" :href="safeSourceUrl(source.source_url)" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">打开原始来源 ↗</a>
-        <pre>{{ source.text }}</pre>
-      </details>
+    <section><h3>本次提供给模型的来源</h3><p>以下来源曾提供给模型；标记说明哪些被回答、方案或证据关系实际引用。</p><p v-if="!report.sources?.length">没有可用来源。</p>
+      <EvidenceSources ref="sources" :sources="report.sources || []" :cited-ids="citedIds" />
     </section>
   </article>
 </template>

@@ -11,6 +11,7 @@ from document_research.providers import (
     PUBLIC_DOCUMENTS,
     ZHIPU_RETRIEVE_URL,
     HttpProviders,
+    ProviderConfigurationError,
     ProviderError,
     model_configured,
     public_excerpt,
@@ -272,7 +273,8 @@ def test_incomplete_model_output_is_error():
         )
 
 
-def test_model_request_is_explicit_json_and_has_no_tools():
+@pytest.mark.parametrize("reasoning_effort", [None, "low", "high", "max"])
+def test_model_request_is_explicit_json_and_has_no_tools(reasoning_effort):
     requests = []
 
     def handle(request):
@@ -289,23 +291,78 @@ def test_model_request_is_explicit_json_and_has_no_tools():
             },
         )
 
+    config = {
+        "base_url": "https://model.example/v1",
+        "api_key": "synthetic",
+        "model": "test",
+    }
+    if reasoning_effort is not None:
+        config["reasoning_effort"] = reasoning_effort
     value = run(
         HttpProviders(httpx.MockTransport(handle)).model_report(
-            {
-                "base_url": "https://model.example/v1",
-                "api_key": "synthetic",
-                "model": "test",
-            },
+            config,
             [{"role": "user", "content": "synthetic document"}],
             lambda: None,
         )
     )
     payload = json.loads(requests[0].content)
     assert str(requests[0].url) == "https://model.example/v1/chat/completions"
-    assert payload["response_format"] == {"type": "json_object"}
-    assert payload["stream"] is False
-    assert "tools" not in payload
+    expected_payload = {
+        "model": "test",
+        "messages": [{"role": "user", "content": "synthetic document"}],
+        "temperature": 0,
+        "response_format": {"type": "json_object"},
+        "max_tokens": 10000,
+        "stream": False,
+    }
+    if reasoning_effort is not None:
+        expected_payload["reasoning_effort"] = reasoning_effort
+    assert payload == expected_payload
     assert value == {"synthetic": True}
+
+
+@pytest.mark.parametrize(
+    "reasoning_effort",
+    [
+        None,
+        True,
+        1,
+        [],
+        {},
+        "",
+        " low",
+        "LOW",
+        "medium",
+        "minimal",
+        "xhigh",
+        "private-secret",
+    ],
+)
+def test_invalid_model_reasoning_effort_is_safe_and_sends_no_request(reasoning_effort):
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        return httpx.Response(200, json={})
+
+    provider = HttpProviders(httpx.MockTransport(handle))
+    with pytest.raises(ProviderConfigurationError) as error:
+        run(
+            provider.model_report(
+                {
+                    "base_url": "https://model.example/v1",
+                    "api_key": "synthetic-secret",
+                    "model": "test",
+                    "reasoning_effort": reasoning_effort,
+                },
+                [{"role": "user", "content": "synthetic private document"}],
+                lambda: None,
+            )
+        )
+    assert str(error.value) == (
+        "独立模型思考强度配置无效，reasoning_effort 仅支持 low、high 或 max。"
+    )
+    assert requests == []
 
 
 def test_public_revocation_is_not_downgraded_to_warning():

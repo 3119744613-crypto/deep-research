@@ -6,7 +6,7 @@ import math
 import re
 from collections.abc import Callable
 from datetime import datetime, timezone
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 import httpx
 
@@ -16,6 +16,7 @@ Authorize = Callable[[], None]
 ZHIPU_RETRIEVE_URL = (
     "https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve"
 )
+ZHIPU_WEB_SEARCH_URL = "https://open.bigmodel.cn/api/paas/v4/web_search"
 PUBLIC_DOCUMENTS = (
     (
         "Docling 官方 README",
@@ -32,6 +33,37 @@ PUBLIC_DOCUMENTS = (
 )
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 MAX_PUBLIC_EXCERPT = 6000
+MAX_PUBLIC_SEARCH_RESULTS = 10
+PUBLIC_SEARCH_SNIPPET_WARNING = (
+    "联网来源为搜索服务返回的摘要，未读取网页全文；引用仅能核对这些片段。"
+)
+SOURCE_CREDENTIAL_PARAMS = {
+    "access_token",
+    "access-token",
+    "accesskey",
+    "accesskeyid",
+    "api_key",
+    "apikey",
+    "authorization",
+    "awsaccesskeyid",
+    "credential",
+    "key-pair-id",
+    "ossaccesskeyid",
+    "q-ak",
+    "q-key-time",
+    "q-sign-algorithm",
+    "q-sign-time",
+    "q-signature",
+    "secret",
+    "sig",
+    "signature",
+    "token",
+    "x-amz-credential",
+    "x-amz-security-token",
+    "x-amz-signature",
+    "x-goog-credential",
+    "x-goog-signature",
+}
 
 
 class ProviderError(RuntimeError):
@@ -47,16 +79,87 @@ def safe_source_url(value: object) -> str | None:
         return None
     try:
         parts = urlsplit(value)
+        parameter_names = {
+            key.casefold()
+            for component in (parts.query, parts.fragment)
+            for key, _ in parse_qsl(component.replace(";", "&"), keep_blank_values=True)
+        }
         return (
             value
             if parts.scheme in {"https", "http"}
             and parts.hostname
             and not parts.username
             and not parts.password
+            and not parameter_names.intersection(SOURCE_CREDENTIAL_PARAMS)
             else None
         )
     except ValueError:
         return None
+
+
+def primary_public_url(value: object) -> str | None:
+    """只收录本模块候选工具的官方文档/代码与论文原始发布站点。"""
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 2000
+        or any(char.isspace() or ord(char) < 32 for char in value)
+        or "\\" in value
+    ):
+        return None
+    try:
+        parts = urlsplit(value)
+        if (
+            parts.scheme != "https"
+            or parts.username
+            or parts.password
+            or parts.port not in {None, 443}
+            or not parts.hostname
+            or "%" in parts.path
+            or any(part in {".", ".."} for part in parts.path.split("/"))
+        ):
+            return None
+        host, path = parts.hostname.lower(), parts.path
+        allowed = False
+        if host in {"github.com", "raw.githubusercontent.com"}:
+            pieces = path.strip("/").lower().split("/")
+            repositories = {
+                ("docling-project", "docling"),
+                ("ds4sd", "docling"),
+                ("paddlepaddle", "paddleocr"),
+                ("unstructured-io", "unstructured"),
+            }
+            allowed = tuple(pieces[:2]) in repositories and (
+                host == "raw.githubusercontent.com"
+                or len(pieces) == 2
+                or pieces[2] in {"blob", "tree", "releases"}
+            )
+        elif host == "docling-project.github.io":
+            allowed = path == "/docling" or path.startswith("/docling/")
+        elif host == "paddlepaddle.github.io":
+            allowed = path == "/PaddleOCR" or path.startswith("/PaddleOCR/")
+        elif host in {"docs.unstructured.io", "www.paddleocr.ai", "paddleocr.ai"}:
+            allowed = True
+        elif host in {"arxiv.org", "www.arxiv.org"}:
+            allowed = bool(
+                re.fullmatch(
+                    r"/(?:abs|pdf|html)/(?:\d{4}\.\d{4,5}|[a-z-]+/\d{7})"
+                    r"(?:v\d+)?(?:\.pdf)?/?",
+                    path,
+                )
+            )
+        elif host == "aclanthology.org":
+            allowed = bool(re.fullmatch(r"/\d{4}\.[A-Za-z0-9_.-]+/?", path))
+        elif host == "openaccess.thecvf.com":
+            allowed = path.startswith(("/content_", "/content/"))
+        elif host == "proceedings.mlr.press":
+            allowed = bool(re.fullmatch(r"/v\d+/[A-Za-z0-9_./-]+", path))
+        if allowed:
+            # 丢弃查询参数/片段，避免将跟踪或任意跳转参数作为证据链接输出。
+            return urlunsplit(("https", host, path, "", ""))
+    except ValueError:
+        pass
+    return None
 
 
 def model_configured(config: dict) -> bool:
@@ -339,6 +442,94 @@ class HttpProviders:
                 warnings.append(f"{title} 获取失败，未作为本次证据。")
         return sources, warnings
 
+    async def search_public(
+        self, api_key: str, public_query: str, authorize: Authorize
+    ) -> tuple[list[dict], list[str]]:
+        """仅发送显式公开关键词；返回搜索摘要，不跟随或抓取结果链接。"""
+        if (
+            not isinstance(public_query, str)
+            or not public_query.strip()
+            or len(public_query) > 70
+        ):
+            raise ResearchError("联网搜索需要单独填写 1 至 70 字符的公开关键词。")
+        if not isinstance(api_key, str) or not api_key.strip():
+            raise ProviderError("未配置独立的智谱联网搜索密钥。")
+        data = strict_json(
+            await self._request(
+                "POST",
+                ZHIPU_WEB_SEARCH_URL,
+                authorize,
+                headers={"Authorization": f"Bearer {api_key}"},
+                payload={
+                    "search_query": public_query,
+                    "search_engine": "search_std",
+                    "search_intent": False,
+                    "count": MAX_PUBLIC_SEARCH_RESULTS,
+                    "content_size": "medium",
+                    "search_recency_filter": "noLimit",
+                },
+            )
+        )
+        if (
+            not isinstance(data, dict)
+            or "error" in data
+            or not isinstance(data.get("search_result"), list)
+        ):
+            raise ProviderError("智谱联网搜索返回失败状态或不兼容的响应结构。")
+        rows = data["search_result"]
+        if len(rows) > 50:
+            raise ProviderError("联网搜索返回结果数量超限。")
+        sources, seen = [], set()
+        filtered = False
+        truncated = len(rows) > MAX_PUBLIC_SEARCH_RESULTS
+        fetched_at = datetime.now(timezone.utc).isoformat()
+        for row in rows:
+            if (
+                not isinstance(row, dict)
+                or any(
+                    not isinstance(row.get(key), str) or not row[key].strip()
+                    for key in ("title", "content", "link")
+                )
+                or len(row["title"]) > 2000
+                or len(row["content"]) > 100000
+                or len(row["link"]) > 2000
+            ):
+                raise ProviderError("联网搜索返回了无效的来源片段。")
+            url = primary_public_url(row["link"])
+            if not url:
+                filtered = True
+                continue
+            if url in seen:
+                continue
+            seen.add(url)
+            if len(sources) >= MAX_PUBLIC_SEARCH_RESULTS:
+                continue
+            text = row["content"][:MAX_PUBLIC_EXCERPT]
+            truncated = truncated or len(text) < len(row["content"])
+            sources.append(
+                {
+                    "id": url,
+                    "original_id": url,
+                    "library_id": "public:web_search",
+                    "document_id": url,
+                    "title": row["title"],
+                    "text": text,
+                    "source_url": url,
+                    "page": None,
+                    "origin": "public",
+                    "content_kind": "search_excerpt",
+                    "fetched_at": fetched_at,
+                }
+            )
+        warnings = [PUBLIC_SEARCH_SNIPPET_WARNING] if sources else []
+        if filtered:
+            warnings.append(
+                "部分搜索结果不属于本模块允许的官方文档、代码或论文来源，已排除。"
+            )
+        if truncated:
+            warnings.append("联网搜索结果超过片段或数量上限，仅保留有界摘要。")
+        return sources, warnings
+
     async def model_report(
         self, config: dict, messages: list[dict], authorize: Authorize
     ) -> object:
@@ -352,6 +543,17 @@ class HttpProviders:
             "max_tokens": 10000,
             "stream": False,
         }
+        if "reasoning_effort" in config:
+            reasoning_effort = config["reasoning_effort"]
+            if not isinstance(reasoning_effort, str) or reasoning_effort not in {
+                "low",
+                "high",
+                "max",
+            }:
+                raise ProviderConfigurationError(
+                    "独立模型思考强度配置无效，reasoning_effort 仅支持 low、high 或 max。"
+                )
+            payload["reasoning_effort"] = reasoning_effort
         body = strict_json(
             await self._request(
                 "POST",

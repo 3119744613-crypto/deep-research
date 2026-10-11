@@ -74,7 +74,7 @@ def report():
         "gaps": ["缺少实测数据"],
         "graph": [
             {
-                "subject": "合成样本",
+                "subject": "表格",
                 "relation": "包含",
                 "object": "跨行合并单元格",
                 "kind": "fact",
@@ -82,12 +82,12 @@ def report():
                 "quote": "表格包含跨行合并单元格",
             },
             {
-                "subject": "合并单元格",
-                "relation": "可能增加",
-                "object": "结构提取难度",
+                "subject": "跨行",
+                "relation": "可能关联",
+                "object": "合并单元格",
                 "kind": "inference",
                 "source_id": "S1",
-                "quote": "",
+                "quote": "跨行合并单元格",
             },
         ],
         "measurement_status": "not_measured",
@@ -184,12 +184,21 @@ def test_unknown_source_ids_rejected_in_every_section(section):
         run(Engine(lambda: CONFIG, providers))
 
 
-@pytest.mark.parametrize("quote", ["", "文档中不存在的证据"])
-def test_fact_requires_exact_source_quote(quote):
+def test_fact_requires_exact_source_quote():
     providers = SyntheticProviders()
-    providers.output["graph"][0]["quote"] = quote
+    providers.output["graph"][0]["quote"] = "文档中不存在的证据"
     with pytest.raises(ResearchError, match="原文引句"):
         run(Engine(lambda: CONFIG, providers))
+
+
+def test_fact_without_quote_is_removed_with_warning():
+    providers = SyntheticProviders()
+    providers.output["graph"][0]["quote"] = ""
+    result = run(Engine(lambda: CONFIG, providers))
+    assert len(result["graph"]) == 1
+    assert result["graph"][0]["kind"] == "inference"
+    assert result["graph_removed_count"] == 1
+    assert "已移除 1 条" in result["graph_warnings"][0]
 
 
 def test_inference_cannot_attach_fabricated_source_quote():
@@ -199,13 +208,20 @@ def test_inference_cannot_attach_fabricated_source_quote():
         run(Engine(lambda: CONFIG, providers))
 
 
-@pytest.mark.parametrize("quote", ["", "表格包含跨行合并单元格"])
-def test_inference_allows_empty_or_exact_source_quote(quote):
+@pytest.mark.parametrize(
+    ("quote", "retained"), [("", False), ("表格包含跨行合并单元格", True)]
+)
+def test_inference_requires_quote_with_both_endpoints(quote, retained):
     providers = SyntheticProviders()
     providers.output["graph"][1]["quote"] = quote
     result = run(Engine(lambda: CONFIG, providers))
-    assert result["graph"][1]["quote"] == quote
-    assert result["graph"][1]["verification_status"] == "pending_validation"
+    if retained:
+        assert result["graph"][1]["quote"] == quote
+        assert result["graph"][1]["verification_status"] == "pending_validation"
+    else:
+        assert len(result["graph"]) == 1
+        assert result["graph_removed_count"] == 1
+        assert result["graph_warnings"]
 
 
 @pytest.mark.parametrize(
